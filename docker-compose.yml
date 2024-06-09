@@ -1,41 +1,36 @@
-version: "3.8"
+# Use postgres/example user/password credentials
+version: "3.9"
 
 services:
-  app:
-    # container_name:
-    build:
-      context: .
-      dockerfile: ./docker/app/app.dockerfile
+  db:
+    image: postgres
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
     volumes:
-      - ./src/:/var/www/html
+      - type: tmpfs
+        target: /dev/shm
+        tmpfs:
+          size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_PASSWORD: password
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
 
   web:
-    # container_name:
-    build:
-      context: .
-      dockerfile: ./docker/web/web.dockerfile
-    ports:
-      - 80:80
+    build: .
     depends_on:
-      - app
-    volumes:
-      - ./src/:/var/www/html
-
-  db:
-    # container_name:
-    build:
-      context: .
-      dockerfile: ./docker/db/db.dockerfile
-    ports:
-      - 3306:3306
+      - db
     environment:
-      MYSQL_DATABASE: db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: pass
-      MYSQL_ROOT_PASSWORD: pass
-      TZ: "Asia/Tokyo"
+      DATABASE_PASSWORD: password
+    ports:
+      - "80:80"
     volumes:
-      - mysql-volume:/var/lib/mysql
-
+      - .:/kotonoha_wallet
 volumes:
-  mysql-volume:
+  db-data:
